@@ -15,10 +15,8 @@ router.post("/register", async (req, res) => {
     const existingUser = await User.findOne({ email });
 
     if (existingUser && !existingUser.isPaid) {
-      if (password) {
-        const salt = await bcrypt.genSalt(10);
-        password = await bcrypt.hash(password, salt);
-      }
+      const salt = await bcrypt.genSalt(10);
+      password = await bcrypt.hash(password, salt);
       let user = await User.findOneAndUpdate(
         { email },
         { name, email, password },
@@ -27,19 +25,21 @@ router.post("/register", async (req, res) => {
       if (!user) {
         return res.status(500).json({ error: "Failed to update user" });
       } else {
-        return res.json({
-          action: "redirect",
-          url: "https://www.google.com",
-          user,
-        });
+        const customer = await createCustomer(user.email);
+        const checkoutSession = await createCheckoutSession(
+          customer.id,
+          process.env.STRIPE_PRICE_ID
+        );
+        if (!checkoutSession.success) {
+          return res
+            .status(500)
+            .json({ success: false, error: checkoutSession.message });
+        } else {
+          return res
+            .state(200)
+            .json({ url: checkoutSession.url, success: true });
+        }
       }
-      //      const customer = await createCustomer(user.email);
-      // const checkoutSession = await createCheckoutSession(customer.id , process.env.STRIPE_PRICE_ID);
-      // if(!checkoutSession.success){
-      //     return res.status(500).json({ success: false , error: checkoutSession.message });
-      // }else{
-      //     return res.state(200).json({url: checkoutSession.url, success: true});
-      // }
     } else if (existingUser && existingUser.isPaid) {
       return res.status(400).json({ error: "User already exists" });
     }
@@ -81,20 +81,31 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    if (!user.isPaid) {
-      return res.json({ action: "redirect", url: "https://www.google.com" });
-      // const customer = await createCustomer(user.email);
-      // const checkoutSession = await createCheckoutSession(customer.id , process.env.STRIPE_PRICE_ID);
-      // if(!checkoutSession.success){
-      //     return res.status(500).json({ success: false , error: checkoutSession.message });
-      // }else{
-      //     return res.state(200).json({url: checkoutSession.url, success: true});
-      // }
+    const customer = await createCustomer(user.email);
+    const subscriptionList = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 1,
+    });
+    if (!subscriptionList.data.length > 0) {
+      const checkoutSession = await createCheckoutSession(
+        customer.id,
+        process.env.STRIPE_PRICE_ID
+      );
+      if (!checkoutSession.success) {
+        return res
+          .status(500)
+          .json({ success: false, error: checkoutSession.message });
+      } else {
+        return res
+          .state(200)
+          .json({ url: checkoutSession.url, action: "redirect" });
+      }
     }
-
+    
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, isPaid: user.isPaid },
+      { id: user._id, isPaid: true },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -106,7 +117,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isPaid: user.isPaid,
+        isPaid: true,
       },
     });
   } catch (err) {
