@@ -79,7 +79,6 @@ router.post("/login", async (req, res) => {
       }
     }
     // console.log("user is paid", user);
-    await User.findOneAndUpdate({ email }, { isPaid: true });
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, isPaid: true },
