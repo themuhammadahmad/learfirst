@@ -13,6 +13,9 @@ app.use(express.json());
 const quizRoutes = require("./routes/quizRoutes");
 const userRoutes = require("./routes/userRoutes");
 const codeRoutes = require("./routes/codeRoutes");
+app.get("/", (req, res) => {
+   res.send("Hello World!"); 
+})
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/codes", codeRoutes);
