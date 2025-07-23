@@ -79,9 +79,10 @@ router.post("/login", async (req, res) => {
       }
     }
     // console.log("user is paid", user);
+    await User.findOneAndUpdate({ email }, { isPaid: true });
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, isPaid: user.isPaid },
+      { id: user._id, isPaid: true },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -93,7 +94,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isPaid: user.isPaid,
+        isPaid: true,
       },
     });
   } catch (err) {
