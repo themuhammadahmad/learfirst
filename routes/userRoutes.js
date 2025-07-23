@@ -10,58 +10,33 @@ router.post("/register", async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ error: "All fields are required" });
   }
-
+  
   try {
-    const existingUser = await User.findOne({ email });
-
-    if (existingUser && !existingUser.isPaid) {
-      const salt = await bcrypt.genSalt(10);
-      password = await bcrypt.hash(password, salt);
-      let user = await User.findOneAndUpdate(
-        { email },
-        { name, email, password },
-        { new: true }
-      );
-      if (!user) {
-        return res.status(500).json({ error: "Failed to update user" });
-      } else {
-        const customer = await createCustomer(user.email);
+    let alreadyExit = await User.findOne({ email });
+    if(alreadyExit){
+      return res.status(400).json({ error: "User already exist" });
+    }else{
+        let user = await User.create({ name, email, password });
+        let customer = await createCustomer(user.email);
         const checkoutSession = await createCheckoutSession(
           customer.id,
           process.env.STRIPE_PRICE_ID
         );
+        // console.log(checkoutSession);
         if (!checkoutSession.success) {
           return res
             .status(500)
             .json({ success: false, error: checkoutSession.message });
         } else {
           return res
-            .state(200)
-            .json({ url: checkoutSession.url, success: true });
+            .status(200)
+            .json({ url: checkoutSession.url, action: "redirect" });
         }
-      }
-    } else if (existingUser && existingUser.isPaid) {
-      return res.status(400).json({ error: "User already exists" });
     }
-    const user = await User.create({ name, email, password });
-    if (!user) {
-      return res.status(500).json({ error: "Failed to create user" });
-    }
-    const customer = await createCustomer(user.email);
-    const checkoutSession = await createCheckoutSession(
-      customer.id,
-      process.env.STRIPE_PRICE_ID
-    );
-    if (!checkoutSession.success) {
-      return res
-        .status(500)
-        .json({ success: false, error: checkoutSession.message });
-    } else {
-      return res.state(200).json({ url: checkoutSession.url, success: true });
-    }
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+   return res.status(500).json({ error: error.message }); 
   }
+  
 });
 
 router.post("/login", async (req, res) => {
@@ -73,7 +48,7 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "User not found" });
     }
 
     const isMatch = await user.comparePassword(password);
@@ -92,20 +67,21 @@ router.post("/login", async (req, res) => {
         customer.id,
         process.env.STRIPE_PRICE_ID
       );
+      // console.log(checkoutSession);
       if (!checkoutSession.success) {
         return res
           .status(500)
           .json({ success: false, error: checkoutSession.message });
       } else {
         return res
-          .state(200)
+          .status(200)
           .json({ url: checkoutSession.url, action: "redirect" });
       }
     }
-    
+    // console.log("user is paid", user);
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id, isPaid: true },
+      { id: user._id, isPaid: user.isPaid },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -117,7 +93,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isPaid: true,
+        isPaid: user.isPaid,
       },
     });
   } catch (err) {
@@ -170,7 +146,7 @@ async function createCheckoutSession(customerId, priceId) {
       url: session.url,
     };
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    // console.error("Error creating checkout session:", error);
     return {
       success: false,
       message: error.message,

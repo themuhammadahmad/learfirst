@@ -1,6 +1,9 @@
 const Code = require("../models/Code");
 const User = require("../models/User");
 const router = require("express").Router();
+const Stripe = require("stripe");
+const stripe = Stripe(process.env.STRIPE_SK);
+
 
 router.post("/", async (req, res) => {
   try {
@@ -16,7 +19,14 @@ router.post("/", async (req, res) => {
         return res.status(404).json({ error: "User not found" });
       }
 
-      if (user.isPaid) {
+          const customer = await createCustomer(user.email);
+    const subscriptionList = await stripe.subscriptions.list({
+      customer: customer.id,
+      status: "active",
+      limit: 1,
+    });
+    
+      if (subscriptionList.data.length > 0) {
         let codes = await Code.find({}, projection);
         return res.status(200).json(codes);
       } else {
