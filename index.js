@@ -24,6 +24,13 @@ const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SK);
 const endpointSecret = process.env.WEBHOOK_SECRET;
 
+app.get("/success", (req, res) => {
+  res.send("successfully paid");
+})
+app.get("/cancel", (req, res) => {
+  res.send("successfully paid");
+})
+
 app.post('/webhook', express.raw({ type: 'application/json' }), async (request, response) => {
   const sig = request.headers['stripe-signature'];
   let event;

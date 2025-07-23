@@ -137,8 +137,8 @@ async function createCheckoutSession(customerId, priceId) {
           quantity: 1,
         },
       ],
-      success_url: process.env.SUCCESS_URL,
-      cancel_url: process.env.CANCEL_URL,
+      success_url: "https://learfirst.vercel.app/success",
+      cancel_url: "https://learfirst.vercel.app/cancel",
     });
 
     return {
