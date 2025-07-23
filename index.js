@@ -2,7 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
-
 const app = express();
 
 // Middlewares
@@ -20,6 +19,7 @@ app.use("/api/quizzes", quizRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/codes", codeRoutes);
 
+const User = require("./models/User");
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SK);
 const endpointSecret = process.env.WEBHOOK_SECRET;
