@@ -46,6 +46,18 @@ router.post("/", async (req, res) => {
 
 let codes = ["M4T8H2", "D7R1V9", "3N6L1SH", "G30GR4PH", "SC13NC3"];
 
+async function createCustomer(email) {
+  const customers = await stripe.customers.list({ email: email, limit: 1 });
+
+  let customer;
+  if (customers.data.length > 0) {
+    customer = customers.data[0];
+  } else {
+    customer = await stripe.customers.create({ email: email });
+  }
+
+  return customer;
+}
 // codes.forEach(async (code, i) => {
 //     try {
 //         let newCode = await Code.create({code, isPaid: i >= 3 ? false : true});
