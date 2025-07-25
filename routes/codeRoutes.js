@@ -27,7 +27,8 @@ router.post("/", async (req, res) => {
     });
     
       if (subscriptionList.data.length > 0) {
-        let codes = await Code.find({}, projection);
+        // let codes = await Code.find({}, projection);
+         codes = await Code.find({ code: { $nin: user.hiddenCodes } }, projection);
         return res.status(200).json(codes);
       } else {
         let codes = await Code.find({ isPaid: false }, projection);
@@ -38,6 +39,29 @@ router.post("/", async (req, res) => {
       return res.status(200).json(codes);
     }
 
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// to hide code
+router.post("/hide-code", async (req, res) => {
+  const { email, codeToHide } = req.body;
+
+  if (!email || !codeToHide) {
+    return res.status(400).json({ error: "Email and code are required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (!user.hiddenCodes.includes(codeToHide)) {
+      user.hiddenCodes.push(codeToHide);
+      await user.save();
+    }
+
+    return res.status(200).json({ success: true, message: "Code hidden" });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
