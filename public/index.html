@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Quiz CSV</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    /* Top bar */
+    .top-bar {
+      height: 80px;
+      background-color: #03453B;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .top-bar img {
+      height: 50px;
+    }
+
+    .top-bar a {
+      color: white;
+      text-decoration: none;
+      background: #046a5b;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .top-bar a:hover {
+      background: #05806d;
+    }
+
+    /* Container */
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 80px);
+    }
+
+    .upload-box {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      text-align: center;
+      width: 350px;
+    }
+
+    .upload-box h2 {
+      color: #03453B;
+      margin-bottom: 20px;
+    }
+
+    .upload-box input[type="file"] {
+      margin-bottom: 20px;
+    }
+
+    .upload-box button {
+      padding: 10px 20px;
+      background-color: #03453B;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .upload-box button:hover {
+      background-color: #046a5b;
+    }
+
+    #message{
+     color: red;
+     padding: 7px;
+     text-transform: capitalize;
+    }
+
+    .spiner{
+   animation: spin 1s linear infinite;
+   border-right: 2px solid white;
+   border-left: 2px solid white;
+   border-radius: 50%;
+   width: 18.75px;
+   height: 18.75px;
+}
+@keyframes spin {
+  0%{
+    transform: rotate(0deg);
+  }
+  50%{
+    transform: rotate(180deg);
+  }
+  100%{
+    transform: rotate(360deg);
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <img src="images/logo.jpg" alt="Logo">
+    <a href="/admin-logout">Logout</a>
+  </div>
+
+  <div class="container">
+    <div class="upload-box">
+      <h2>Upload CSV File</h2>
+      <input type="file" id="csvFile" accept=".csv" />
+      <br>
+      <button id="upload-btn" onclick="uploadCSV()">Upload
+
+      </button>
+      <div id="message"></div>
+    </div>
+  </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <script>
+    let upload_btn = document.querySelector("#upload-btn");
+function parseCSV(text) {
+  // Parse CSV with PapaParse
+  const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+
+  return parsed.data.map(row => ({
+    code: row.code.trim(),
+    question: row.question.trim(),
+    options: row.options.split(";").map(opt => opt.trim()),
+    correctAnswers: row.correctAnswers.split(";").map(Number),
+    type: row.type.trim(),
+    isPaid: row.isPaid.trim().toLowerCase() === "true"
+  }));
+}
+
+    async function uploadCSV(e) {
+      upload_btn.innerHTML = '<div class="spiner"></div> ';
+      const fileInput = document.getElementById("csvFile");
+      const file = fileInput.files[0];
+      if (!file) {
+        upload_btn.innerHTML = "Upload";
+        document.querySelector("#message").innerHTML = "please select a file";
+        return;
+      };
+
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const text = e.target.result;
+        const quizData = parseCSV(text);
+        console.log(quizData);
+          try {
+            const res = await fetch("http://localhost:8000/api/quizzes/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ quizzes: quizData })
+            });
+
+            const data = await res.json();
+            upload_btn.innerHTML = "Upload";
+            // alert(data.message || "Upload complete");
+            document.querySelector("#message").innerHTML = data.message || "Upload complete";
+          } catch (err) {
+            upload_btn.innerHTML = "Upload";
+            console.error("Upload failed", err);
+            document.querySelector("#message").innerHTML = "Failed to upload quizzes";
+          }
+      };
+
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>

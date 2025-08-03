@@ -7,14 +7,15 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isPaid: { type: Boolean, default: false },
-    hiddenCodes: [{ type: String }], // <-- new field
+    hiddenCodes: [{ type: String }],
+    isAdmin: { type: Boolean, default: false }, // <-- Add this line
   },
   { timestamps: true }
 );
 
 // Hash the password before saving
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // Only hash if modified or new
+  if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
