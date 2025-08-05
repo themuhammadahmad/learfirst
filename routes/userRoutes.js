@@ -89,7 +89,7 @@ router.post("/register", async (req, res) => {
 
     const newUser = await User.create({ name, email, password });
     const customer = await createCustomer(newUser.email);
-    const session = await createCheckoutSession(customer.id, process.env.STRIPE_PRICE_ID);
+    const session = await createCheckoutSession(customer.id, "price_1RsfYJEF7jmdulNHlgHmvYNG");
 
     if (!session.success) {
       return res.status(500).json({ success: false, error: session.message });
@@ -120,7 +120,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const subscriptionCheck = await handleStripeSubscriptionFlow(user.email, process.env.STRIPE_PRICE_ID);
+    const subscriptionCheck = await handleStripeSubscriptionFlow(user.email, "price_1RsfYJEF7jmdulNHlgHmvYNG");
 
     if (subscriptionCheck.error) {
       return res.status(500).json({ success: false, error: subscriptionCheck.error });
