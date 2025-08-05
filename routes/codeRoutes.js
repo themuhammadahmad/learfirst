@@ -44,6 +44,15 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.get("/get-all", async (req, res) => {
+   try {
+    let codes = await Code.find({});
+    return res.status(200).json(codes);
+   } catch (error) {
+    return res.status(500).json({ error: error.message });
+   }
+})
+
 // to hide code
 router.post("/hide-code", async (req, res) => {
   const { email, codeToHide } = req.body;

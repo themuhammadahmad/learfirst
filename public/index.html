@@ -21,7 +21,7 @@
     }
 
     .top-bar img {
-      height: 50px;
+      height: 80px;
     }
 
     .top-bar a {
@@ -43,6 +43,11 @@
       justify-content: center;
       align-items: center;
       min-height: calc(100vh - 80px);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #ddd;
     }
 
     .upload-box {
@@ -102,6 +107,34 @@
     transform: rotate(360deg);
   }
 }
+.pre{
+   padding: 20px;
+}
+.pre ul{
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-left: 0;
+}
+.pre li{
+  padding: 5px 10px;
+  font-size: 16px;
+  list-style-type: none;
+  background-color: #046a5b;
+  color: #eee;
+}
+.pre button, .close{
+  padding: 10px 20px;
+  background-color: #03453B;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.close{
+  background: red;
+}
   </style>
 </head>
 <body>
@@ -109,9 +142,15 @@
     <img src="images/logo.jpg" alt="Logo">
     <a href="/admin-logout">Logout</a>
   </div>
+  <div class="pre">
+    <ul id="list">
+    </ul>
+    <button id="popup_btn">upload</button>
+  </div>
+  <div id="popup" class="container" style="display: none;">
 
-  <div class="container">
-    <div class="upload-box">
+    <div class="upload-box" >
+      <button class="close">X</button>
       <h2>Upload CSV File</h2>
       <input type="file" id="csvFile" accept=".csv" />
       <br>
@@ -120,10 +159,21 @@
       </button>
       <div id="message"></div>
     </div>
+
   </div>
 <script src="./images/papaparse.js"></script>
 
   <script>
+    let popup_btn = document.getElementById("popup_btn"); 
+    let close = document.querySelector(".close");
+    popup_btn.addEventListener("click", () => {
+      popup.style.display = "flex";
+    })
+    close.addEventListener("click", () => {
+      popup.style.display = "none";
+    })
+
+    let popup = document.getElementById("popup"); 
     let upload_btn = document.querySelector("#upload-btn");
 function parseCSV(text) {
   // Parse CSV with PapaParse
@@ -174,6 +224,21 @@ function parseCSV(text) {
 
       reader.readAsText(file);
     }
+  
+   fetch("/api/codes/get-all")
+   .then(res => res.json())
+   .then(data => {
+     console.log(data);
+     let list = document.getElementById("list");
+     data.forEach(code => {
+       let li = document.createElement("li");
+       li.innerHTML = code.code;
+       list.appendChild(li);
+     })
+   })
+   .catch(err => {
+     console.log(err);
+   })
   </script>
 </body>
 </html>
